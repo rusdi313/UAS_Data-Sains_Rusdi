@@ -1,15 +1,18 @@
+import os
+import sys
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import os
-import sys
 
 app = Flask(__name__)
-CORS(app) 
 
-# --- KONFIGURASI ---
+# --- KONFIGURASI CORS (UPDATE UNTUK DEPLOY) ---
+# Kita izinkan semua origin ("*") agar Frontend di Railway bisa akses Backend ini tanpa kena blokir.
+CORS(app, resources={r"/*": {"origins": "*"}})
+
+# --- KONFIGURASI DATA ---
 INDO_STOP_WORDS = [
     'yang', 'untuk', 'pada', 'saya', 'anda', 'kita', 'mereka', 'dengan', 
     'adalah', 'di', 'ke', 'dari', 'dan', 'atau', 'ini', 'itu', 'mau',
@@ -18,6 +21,7 @@ INDO_STOP_WORDS = [
 ]
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Pastikan folder 'data' dan file csv Anda ikut ter-upload ke GitHub!
 DATA_PATH = os.path.join(BASE_DIR, 'data', 'dataset_gordyn.csv')
 
 # --- INISIALISASI VARIABEL GLOBAL ---
@@ -51,13 +55,16 @@ def load_data():
             return False
 
     # 3. Cek Kelengkapan Kolom
-    print(f"📊 Kolom terbaca: {df.columns.tolist()}")
+    # Pastikan nama kolom di CSV sesuai dengan ini (Case Sensitive!)
     required_columns = ['Nama_Gorden', 'Deskripsi', 'Gaya', 'Warna', 'Bahan']
+    # Normalisasi nama kolom di dataframe (opsional, jaga-jaga ada spasi)
+    df.columns = df.columns.str.strip()
+    
     missing = [col for col in required_columns if col not in df.columns]
     
     if missing:
         print(f"❌ FATAL ERROR: Kolom berikut HILANG dari CSV: {missing}")
-        print("   Cek baris pertama file CSV kamu!")
+        print(f"   Kolom yang ada: {df.columns.tolist()}")
         return False
 
     # 4. Proses Vectorizer
@@ -75,6 +82,14 @@ def load_data():
         tfidf = TfidfVectorizer(stop_words=INDO_STOP_WORDS)
         tfidf_matrix = tfidf.fit_transform(df['Combined_Features'])
         
+        # Buat kolom ID jika belum ada (untuk frontend)
+        if 'ID' not in df.columns:
+             df['ID'] = range(1, len(df) + 1)
+
+        # Buat kolom Image_Filename jika belum ada
+        if 'Image_Filename' not in df.columns:
+            df['Image_Filename'] = df['ID'].astype(str) + ".jpg"
+
         print(f"✅ SUKSES: Berhasil memuat {len(df)} data produk!")
         print("="*60)
         return True
@@ -85,7 +100,6 @@ def load_data():
 # Jalankan Load Data saat startup
 if not load_data():
     print("⚠️ SERVER BERJALAN DALAM MODE ERROR (Data Gagal Dimuat)")
-    # Kita tidak exit, agar server tetap nyala dan bisa mengirim pesan error ke frontend
 
 # --- LOGIC CHATBOT ---
 def generate_smart_advice(query):
@@ -106,10 +120,9 @@ def generate_smart_advice(query):
 # --- API ENDPOINT ---
 @app.route('/api/recommend', methods=['POST'])
 def recommend():
-    # Cek jika data gagal dimuat sebelumnya
     if df.empty or tfidf is None:
         return jsonify({
-            "insight": "Sistem sedang mengalami gangguan data server.",
+            "insight": "Sistem sedang memuat data atau mengalami gangguan.",
             "products": []
         }), 500
 
@@ -129,7 +142,7 @@ def recommend():
             score = similarity_scores[i]
             if score > 0.1: 
                 item = df.iloc[i].to_dict()
-                # Handle NaN values untuk JSON
+                # Bersihkan data untuk JSON (hapus NaN)
                 item = {k: (v if pd.notna(v) else "") for k, v in item.items()}
                 item['score'] = f"{int(score * 100)}%" 
                 recommendations.append(item)
@@ -150,21 +163,16 @@ def recommend():
 # --- API GET PRODUCT BY ID ---
 @app.route('/api/products/<int:product_id>', methods=['GET'])
 def get_product_detail(product_id):
-    # Cek apakah data siap
     if df.empty:
         return jsonify({"error": "Data belum dimuat"}), 503
 
     try:
-        # Cari baris yang ID-nya cocok
         product = df[df['ID'] == product_id]
         
         if product.empty:
             return jsonify({"error": "Produk tidak ditemukan"}), 404
         
-        # Ambil data pertama (karena ID unik) dan ubah ke dictionary
         item = product.iloc[0].to_dict()
-        
-        # Handle NaN values (jika ada data kosong di csv)
         item = {k: (v if pd.notna(v) else "") for k, v in item.items()}
         
         return jsonify(item)
@@ -173,5 +181,15 @@ def get_product_detail(product_id):
         print(f"Error detail: {e}")
         return jsonify({"error": "Server Error"}), 500
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Kurnia Elite Backend is Running!"
+
+# --- BAGIAN PENTING UNTUK DEPLOYMENT ---
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Railway akan menyediakan PORT lewat environment variable
+    # Jika dijalankan di local, default ke 5000
+    port = int(os.environ.get("PORT", 5000))
+    
+    # host='0.0.0.0' PENTING agar bisa diakses dari luar container
+    app.run(host='0.0.0.0', port=port)

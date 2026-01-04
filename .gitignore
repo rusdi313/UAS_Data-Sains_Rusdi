@@ -1,1 +1,28 @@
-node_modules
+# --- Node Modules (Frontend) ---
+node_modules/
+dist/
+build/
+.env
+.DS_Store
+
+# --- Python (Backend) ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- Log Files ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
