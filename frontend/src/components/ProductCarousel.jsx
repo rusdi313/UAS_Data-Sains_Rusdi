@@ -11,11 +11,11 @@ import { useNavigate } from 'react-router-dom'; // 1. Tambahkan import useNaviga
 // --- Data Produk Katalog Baru ---
 const TOP_PRODUCTS = [
     { id: 1, name: "PRO TEXTILE Vittrace Basic", style: "Minimalis", price: "100K-135K", image: "1.jpg", label: "Best Value" },
-    { id: 44, name: "PURE DESIGN Vittrace Natural", style: "Linen Halus", price: "250K-275K", image: "44.jpg", label: "Natural Look" },
-    { id: 91, name: "Platinum 9 Collection ARMANO", style: "Luxury", price: "425K", image: "91.jpg", label: "Premium" },
-    { id: 101, name: "GVTEX Harmoni A8011", style: "Blackout 90%", price: "185K-235K", image: "101.jpg", label: "Best Seller" },
-    { id: 156, name: "PRO TEXTILE THB Blackout", style: "Blackout 100%", price: "235K-395K", image: "156.jpg", label: "Total Dark" },
-    { id: 166, name: "ARCILLA Premium Jacquard", style: "Jacquard", price: "235K-395K", image: "166.jpg", label: "Exclusive" },
+    { id: 10, name: "PURE DESIGN Vittrace Natural", style: "Linen Halus", price: "250K-275K", image: "10.jpg", label: "Natural Look" },
+    { id: 25, name: "Platinum 9 Collection ARMANO", style: "Luxury", price: "425K", image: "25.jpg", label: "Premium" },
+    { id: 30, name: "GVTEX Harmoni A8011", style: "Blackout 90%", price: "185K-235K", image: "30.jpg", label: "Best Seller" },
+    { id: 45, name: "PRO TEXTILE THB Blackout", style: "Blackout 100%", price: "235K-395K", image: "45.jpg", label: "Total Dark" },
+    { id: 50, name: "ARCILLA Premium Jacquard", style: "Jacquard", price: "235K-395K", image: "50.jpg", label: "Exclusive" },
 ];
 
 // --- KOMPONEN PRODUCT CARD ---
