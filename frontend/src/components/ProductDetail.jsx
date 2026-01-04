@@ -11,7 +11,7 @@ const ProductDetail = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/products/${id}`);
+        const res = await fetch(`https://kurnia-backend.up.railway.app/api/products/${productId}`);
         if (!res.ok) throw new Error("Gagal mengambil data");
         const data = await res.json();
         setProduct(data);

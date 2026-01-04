@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Loader2, Search, MessageSquare, History, Trash2, Clock, ThumbsUp, ThumbsDown } from 'lucide-react'; // Tambah icon ThumbsUp, ThumbsDown
+import { ArrowRight, Loader2, Search, MessageSquare, History, Trash2, Clock, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const RecommendationSection = () => {
   const navigate = useNavigate();
   
+  // --- KONFIGURASI API ---
+  // Menggunakan URL Railway Anda untuk menghubungkan Frontend ke Backend yang sudah dideploy
+  const API_BASE_URL = "https://kurnia-backend.up.railway.app"; 
+
   // State Utama
   const [preference, setPreference] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,25 +23,22 @@ const RecommendationSection = () => {
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
 
-  // State Feedback (Baru)
-  const [feedbackStatus, setFeedbackStatus] = useState(null); // 'up', 'down', atau null
+  // State Feedback
+  const [feedbackStatus, setFeedbackStatus] = useState(null);
 
-  // --- [LOGIKA BARU SAAT HALAMAN DIMUAT] ---
+  // Efek saat halaman dimuat
   useEffect(() => {
     const userSession = localStorage.getItem('user_session');
     
     if (userSession) {
-      // === KONDISI 1: SUDAH LOGIN ===
       const userData = JSON.parse(userSession);
       setIsLoggedIn(true);
       setCurrentUserEmail(userData.email);
 
-      // 1. Load History SPESIFIK milik user ini
       const userHistoryKey = `chat_history_${userData.email}`;
       const savedHistory = JSON.parse(localStorage.getItem(userHistoryKey) || "[]");
       setHistory(savedHistory);
 
-      // 2. Load Cache Tampilan Terakhir
       const lastSearch = sessionStorage.getItem('last_search_cache');
       if (lastSearch) {
         const parsedSearch = JSON.parse(lastSearch);
@@ -46,14 +47,10 @@ const RecommendationSection = () => {
         setAiMessage(parsedSearch.aiMessage);
         setShowResults(true);
       }
-
     } else {
-      // === KONDISI 2: BELUM LOGIN (TAMU) ===
       setIsLoggedIn(false);
       setHistory([]);
       setCurrentUserEmail("");
-
-      // Hapus cache tampilan agar saat refresh KEMBALI KOSONG
       sessionStorage.removeItem('last_search_cache');
       setPreference("");
       setShowResults(false);
@@ -69,10 +66,11 @@ const RecommendationSection = () => {
     setErrorMsg(""); 
     setShowResults(false); 
     setShowHistory(false);
-    setFeedbackStatus(null); // Reset feedback saat pencarian baru
+    setFeedbackStatus(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/recommend', {
+      // Perubahan pada baris fetch menggunakan API_BASE_URL
+      const response = await fetch(`${API_BASE_URL}/api/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: preference }),
@@ -85,7 +83,6 @@ const RecommendationSection = () => {
       setAiMessage(data.insight);
       setShowResults(true);
 
-      // Simpan cache sementara
       const searchCache = {
         preference: preference,
         recommendations: data.products,
@@ -93,7 +90,6 @@ const RecommendationSection = () => {
       };
       sessionStorage.setItem('last_search_cache', JSON.stringify(searchCache));
 
-      // --- [LOGIKA SIMPAN HISTORY PER USER] ---
       if (isLoggedIn && currentUserEmail) {
         const newEntry = {
           id: Date.now(),
@@ -105,12 +101,13 @@ const RecommendationSection = () => {
         
         const updatedHistory = [newEntry, ...history];
         setHistory(updatedHistory);
-        
-        // Simpan dengan key UNIK berdasarkan email
         localStorage.setItem(`chat_history_${currentUserEmail}`, JSON.stringify(updatedHistory));
       }
 
-      setTimeout(() => document.getElementById('results').scrollIntoView({ behavior: 'smooth' }), 100);
+      setTimeout(() => {
+        const element = document.getElementById('results');
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
 
     } catch (error) {
       console.error("Error:", error);
@@ -120,18 +117,12 @@ const RecommendationSection = () => {
     }
   };
 
-  // --- [FUNGSI FEEDBACK BARU] ---
   const handleFeedback = (type) => {
     setFeedbackStatus(type);
-    
-    // Simulasi Log Data Science (bisa dilihat di Console browser)
     console.log(`[DATA SCIENCE LOG] Feedback received: ${type.toUpperCase()}`);
-    console.log(`[DATA SCIENCE LOG] Query: "${preference}"`);
-    console.log(`[DATA SCIENCE LOG] Model Action: Retaining query for reinforcement learning.`);
-
     alert(type === 'up' 
         ? "Terima kasih! Kami senang rekomendasi ini membantu Anda." 
-        : "Terima kasih! Masukan Anda akan kami gunakan untuk melatih ulang AI agar lebih cerdas.");
+        : "Terima kasih! Masukan Anda akan kami gunakan untuk melatih AI kami.");
   };
 
   const clearHistory = () => {
@@ -153,7 +144,7 @@ const RecommendationSection = () => {
     setShowResults(false);
     setRecommendations([]);
     setAiMessage("");
-    setFeedbackStatus(null); // Reset feedback
+    setFeedbackStatus(null);
     sessionStorage.removeItem('last_search_cache');
   };
 
@@ -187,7 +178,6 @@ const RecommendationSection = () => {
                 </div>
               )}
 
-              {/* LOGIKA TAMPILAN HISTORY */}
               {showHistory && isLoggedIn ? (
                 <div className="h-64 overflow-y-auto mb-4 pr-2 custom-scrollbar">
                     {history.length === 0 ? (
@@ -239,8 +229,6 @@ const RecommendationSection = () => {
               </div>
             ) : (
                 <div className="space-y-6 animate-fade-in-up">
-                    
-                    {/* --- [UPDATE: CARD ANALISIS AI DENGAN FEEDBACK] --- */}
                     <div className="bg-gradient-to-r from-neutral-800 to-neutral-800 border-l-4 border-yellow-500 p-6 rounded-r-xl rounded-bl-xl shadow-lg mb-8">
                         <div className="flex gap-4 items-start">
                             <div className="p-3 bg-yellow-500/20 rounded-full"><MessageSquare className="text-yellow-500" size={24} /></div>
@@ -250,27 +238,23 @@ const RecommendationSection = () => {
                             </div>
                         </div>
 
-                        {/* FITUR FEEDBACK LOOP */}
                         <div className="mt-4 pt-4 border-t border-neutral-700 flex items-center justify-end gap-3">
                             <span className="text-xs text-gray-500">Apakah saran ini membantu?</span>
                             <button 
                                 onClick={() => handleFeedback('up')}
                                 className={`p-2 rounded-lg transition-all ${feedbackStatus === 'up' ? 'bg-green-500/20 text-green-400' : 'hover:bg-neutral-700 text-gray-400'}`}
-                                title="Saran Bagus"
                             >
                                 <ThumbsUp size={16} />
                             </button>
                             <button 
                                 onClick={() => handleFeedback('down')}
                                 className={`p-2 rounded-lg transition-all ${feedbackStatus === 'down' ? 'bg-red-500/20 text-red-400' : 'hover:bg-neutral-700 text-gray-400'}`}
-                                title="Saran Kurang Tepat"
                             >
                                 <ThumbsDown size={16} />
                             </button>
                         </div>
                     </div>
                     
-                    {/* Grid Produk */}
                     {recommendations.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {recommendations.map((item, idx) => (
