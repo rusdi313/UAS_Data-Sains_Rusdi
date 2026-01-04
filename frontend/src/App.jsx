@@ -21,10 +21,11 @@ const Home = () => (
 const App = () => {
   return (
     <Router>
-      <div className="relative min-h-screen bg-neutral-900">
+      {/* Hapus bg-neutral-900 di sini agar video background terlihat */}
+      <div className="relative min-h-screen">
         <VideoBackground />
         <Navbar /> 
-        <main>
+        <main className="relative z-10">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/product/:productId" element={<ProductDetail />} />
@@ -35,4 +36,5 @@ const App = () => {
     </Router>
   );
 };
+
 export default App;
