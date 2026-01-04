@@ -70,7 +70,7 @@ const RecommendationSection = () => {
 
     try {
       // Perubahan pada baris fetch menggunakan API_BASE_URL
-      const response = await fetch(`${API_BASE_URL}/api/recommend`, {
+      const response = await fetch('https://kurnia-backend.up.railway.app/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: preference }),
