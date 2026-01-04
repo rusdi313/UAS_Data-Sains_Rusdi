@@ -1,122 +1,117 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, Tag } from 'lucide-react';
+import { ArrowLeft, Loader2, Tag, Info, ShoppingCart } from 'lucide-react';
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { productId } = useParams();
   const navigate = useNavigate();
+  
+  // --- KONFIGURASI API ---
+  const API_BASE_URL = "https://kurnia-backend.up.railway.app"; 
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductDetail = async () => {
       try {
-        const res = await fetch(`https://kurnia-backend.up.railway.app/api/products/${productId}`);
-        if (!res.ok) throw new Error("Gagal mengambil data");
-        const data = await res.json();
+        setLoading(true);
+        // UPDATE: Menggunakan URL Railway untuk mengambil detail produk
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`);
+        
+        if (!response.ok) {
+          throw new Error("Produk tidak ditemukan atau server bermasalah.");
+        }
+        
+        const data = await response.json();
         setProduct(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error("Fetch Detail Error:", err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProduct();
-  }, [id]);
+    if (productId) {
+      fetchProductDetail();
+    }
+  }, [productId]);
 
-  if (loading) return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white relative z-30 pt-20">
-        Memuat Detail...
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center text-white">
+        <Loader2 className="animate-spin text-yellow-500 mb-4" size={48} />
+        <p className="text-xl">Memuat Detail Produk...</p>
+      </div>
+    );
+  }
 
-  if (!product) return (
-    <div className="min-h-screen bg-neutral-900 flex items-center justify-center text-white relative z-30 pt-20">
-        Produk tidak ditemukan.
-    </div>
-  );
-
-  // --- LOGIC WHATSAPP ---
-  // Format pesan: Halo, saya tertarik dengan [Nama Produk].
-  const waNumber = "6281398998910";
-  const message = `Halo Admin Kurnia Elite, saya tertarik dengan produk gorden: *${product.Nama_Gorden}* (ID: ${product.ID}). Boleh minta info lebih lanjut?`;
-  const waLink = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex flex-col items-center justify-center text-white p-6">
+        <div className="bg-red-500/10 border border-red-500 p-8 rounded-2xl text-center max-w-md">
+          <h2 className="text-2xl font-bold text-red-500 mb-4">Waduh! Terjadi Kesalahan</h2>
+          <p className="text-gray-400 mb-6">{error || "Data produk gagal dimuat."}</p>
+          <button onClick={() => navigate(-1)} className="px-6 py-2 bg-neutral-800 rounded-lg hover:bg-neutral-700 transition-colors flex items-center gap-2 mx-auto">
+            <ArrowLeft size={18} /> Kembali
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-neutral-900 text-white pt-32 pb-12 px-6 relative z-30">
-      <div className="container mx-auto max-w-5xl">
-        
-        {/* Tombol Kembali */}
-        <button 
-          onClick={() => navigate(-1)} 
-          className="flex items-center gap-2 text-gray-400 hover:text-yellow-500 mb-8 transition-colors cursor-pointer"
-        >
-          <ArrowLeft size={20} /> Kembali ke Pencarian
+    <div className="min-h-screen bg-neutral-900 text-white pt-24 pb-12">
+      <div className="container mx-auto px-6">
+        <button onClick={() => navigate(-1)} className="mb-8 flex items-center gap-2 text-gray-400 hover:text-yellow-500 transition-colors group">
+          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> Kembali ke Koleksi
         </button>
 
-        <div className="bg-neutral-800 rounded-2xl overflow-hidden shadow-2xl border border-neutral-700 flex flex-col md:flex-row">
-          
-          {/* Sisi Kiri: Gambar */}
-          <div className="w-full md:w-1/2 bg-neutral-700 relative h-96 md:h-auto">
-            <img 
-              src={`/images/${product.Image_Filename}`} 
-              alt={product.Nama_Gorden} 
-              className="absolute inset-0 w-full h-full object-cover"
-              onError={(e) => { e.target.src="https://via.placeholder.com/600x800?text=Kurnia+Elite"; }}
-            />
+        <div className="flex flex-col lg:flex-row gap-12">
+          {/* IMAGE SECTION */}
+          <div className="w-full lg:w-1/2">
+            <div className="rounded-3xl overflow-hidden border border-neutral-800 shadow-2xl bg-neutral-800 aspect-square">
+              <img 
+                src={`/images/${product.Image_Filename}`} 
+                alt={product.Nama_Gorden}
+                onError={(e) => {e.target.onerror = null; e.target.src="https://via.placeholder.com/800x800?text=Kurnia+Elite"}}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
 
-          {/* Sisi Kanan: Informasi */}
-          <div className="w-full md:w-1/2 p-8 md:p-10 space-y-6">
+          {/* INFO SECTION */}
+          <div className="w-full lg:w-1/2 space-y-8">
             <div>
-              <div className="flex gap-2 mb-4">
-                <span className="bg-yellow-600/20 text-yellow-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-yellow-600/30">
-                  {product.Bahan}
-                </span>
-                <span className="bg-neutral-700 text-gray-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                  {product.Warna}
-                </span>
+              <div className="flex gap-3 mb-4">
+                <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full text-xs font-bold uppercase tracking-widest">{product.Gaya}</span>
+                <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-xs font-bold uppercase tracking-widest">{product.Bahan}</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2 leading-tight">{product.Nama_Gorden}</h1>
-              <p className="text-xl text-yellow-500 font-bold">{product.Harga}</p>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">{product.Nama_Gorden}</h1>
+              <p className="text-3xl text-yellow-500 font-bold">{product.Harga}</p>
             </div>
 
-            <div className="border-t border-neutral-700 my-4 pt-4">
-              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <Tag size={18} /> Deskripsi Produk
-              </h3>
-              <p className="text-gray-400 leading-relaxed text-sm md:text-base">
-                {product.Deskripsi}
-              </p>
+            <div className="bg-neutral-800/50 p-6 rounded-2xl border border-neutral-800">
+              <h3 className="flex items-center gap-2 font-bold mb-4 text-gray-300"><Info size={18}/> Deskripsi Produk</h3>
+              <p className="text-gray-400 leading-relaxed italic">"{product.Deskripsi}"</p>
             </div>
 
-            <div className="space-y-3 bg-neutral-900/50 p-4 rounded-xl">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">ID Produk:</span>
-                <span className="text-white font-mono">#{product.ID}</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-neutral-800 rounded-xl border border-neutral-700/50">
+                <p className="text-xs text-gray-500 uppercase mb-1">Pilihan Warna</p>
+                <p className="font-semibold text-white">{product.Warna || "N/A"}</p>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Gaya/Style:</span>
-                <span className="text-white">{product.Gaya}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Kategori Harga:</span>
-                <span className="text-white">{product.Kategori_Harga}</span>
+              <div className="p-4 bg-neutral-800 rounded-xl border border-neutral-700/50">
+                <p className="text-xs text-gray-500 uppercase mb-1">ID Produk</p>
+                <p className="font-semibold text-white">#KE-{product.ID}</p>
               </div>
             </div>
 
-            {/* --- TOMBOL WA (DIPERBARUI) --- */}
-            <a 
-              href={waLink}
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-full py-4 rounded-xl bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-black font-bold shadow-lg shadow-yellow-900/20 transition-all flex justify-center items-center gap-2 mt-4 cursor-pointer no-underline"
-            >
-              <CheckCircle size={20} />
-              Pesan Sekarang via WhatsApp
-            </a>
-
+            <button className="w-full py-5 bg-gradient-to-r from-yellow-600 to-yellow-800 hover:from-yellow-500 hover:to-yellow-700 text-black font-black text-lg rounded-2xl transition-all shadow-xl shadow-yellow-900/20 flex justify-center items-center gap-3">
+              <ShoppingCart size={22} /> PESAN SEKARANG
+            </button>
           </div>
         </div>
       </div>

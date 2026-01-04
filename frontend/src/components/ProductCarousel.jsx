@@ -6,8 +6,9 @@ import 'swiper/css/pagination';
 import 'swiper/css/autoplay'; 
 import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 import { Star } from 'lucide-react'; 
+import { useNavigate } from 'react-router-dom'; // 1. Tambahkan import useNavigate
 
-// --- Data Produk Katalog Baru (Diambil dari CSV Baru) ---
+// --- Data Produk Katalog Baru ---
 const TOP_PRODUCTS = [
     { id: 1, name: "PRO TEXTILE Vittrace Basic", style: "Minimalis", price: "100K-135K", image: "1.jpg", label: "Best Value" },
     { id: 44, name: "PURE DESIGN Vittrace Natural", style: "Linen Halus", price: "250K-275K", image: "44.jpg", label: "Natural Look" },
@@ -17,11 +18,21 @@ const TOP_PRODUCTS = [
     { id: 166, name: "ARCILLA Premium Jacquard", style: "Jacquard", price: "235K-395K", image: "166.jpg", label: "Exclusive" },
 ];
 
-// --- KOMPONEN PRODUCT CARD (Tetap sama, hanya data yang berubah) ---
+// --- KOMPONEN PRODUCT CARD ---
 const ProductCard = ({ product }) => {
+    const navigate = useNavigate(); // 2. Inisialisasi navigate di dalam card
     const imagePath = `/images/${product.image}`; 
+    
+    // Fungsi untuk pindah ke halaman detail
+    const goToDetail = () => {
+        navigate(`/product/${product.id}`); // 3. Arahkan ke rute /product/:id
+    };
+
     return (
-        <div className="group bg-neutral-900 rounded-xl overflow-hidden shadow-2xl border border-neutral-800 hover:border-yellow-600/50 transition-all cursor-pointer">
+        <div 
+            onClick={goToDetail} // 4. Tambahkan klik pada seluruh area kartu
+            className="group bg-neutral-900 rounded-xl overflow-hidden shadow-2xl border border-neutral-800 hover:border-yellow-600/50 transition-all cursor-pointer"
+        >
             <div className="relative h-64 overflow-hidden bg-neutral-700">
                 <img 
                     src={imagePath} 
@@ -44,7 +55,13 @@ const ProductCard = ({ product }) => {
                         <Star size={16} fill="#facc15" strokeWidth={1} />
                         Trending
                     </span>
-                    <button className="text-yellow-400 hover:text-yellow-300 transition-colors">
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation(); // Mencegah klik ganda karena pembungkusnya juga punya onClick
+                            goToDetail();
+                        }}
+                        className="text-yellow-400 hover:text-yellow-300 transition-colors"
+                    >
                         Details
                     </button>
                 </div>
